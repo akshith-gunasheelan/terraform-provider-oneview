@@ -25,23 +25,36 @@ jobs:
           PROVIDER_VERSION: v8.4.0-13
         run: |
           # Authenticate with the Terraform Registry
-          upload_data=$(curl --request POST \
-            --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
-            --header "Content-Type: application/vnd.api+json" \
-            --url "https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/upload")
-
-          # Upload the provider's package
-          upload_url=$(echo "$upload_data" | jq -r '.data.attributes."upload-url"')
-          upload_content_type=$(echo "$upload_data" | jq -r '.data.attributes."content-type"')
-          upload_file_path=<path_to_provider_directory> # Replace with the path to your provider directory or specific files
-          upload_file_name=<file_name> # Replace with the name of the file you want to upload
-          curl --request PUT \
-            --header "Content-Type: $upload_content_type" \
-            --data-binary "@$upload_file_path/$upload_file_name" \
-            "$upload_url"
-
-          # Complete the provider's upload
           curl --request POST \
             --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
-            --url "https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/complete"
+            --data '{
+              "data": {
+                "type": "providers",
+                "attributes": {
+                  "name": "'"$PROVIDER_NAME"'",
+                  "vcs-repo": {
+                    "identifier": "'"$GITHUB_REPOSITORY"'",
+                    "display_identifier": "'"$GITHUB_REPOSITORY"'",
+                    "type": "github",
+                    "actions_allowed": true
+                  }
+                }
+              }
+            }' \
+            --url "https://registry.terraform.io/v1/providers"
+
+          # Publish the provider version
+          curl --request POST \
+            --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            --data '{
+              "data": {
+                "type": "versions",
+                "attributes": {
+                  "version": "'"$PROVIDER_VERSION"'",
+                  "vcs-ref": "'"$GITHUB_SHA"'"
+                }
+              }
+            }' \
+            --url "https://registry.terraform.io/v1/providers/$PROVIDER_NAME/versions"
