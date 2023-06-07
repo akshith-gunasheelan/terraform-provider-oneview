@@ -8,9 +8,11 @@ on:
 jobs:
   upload_provider:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+
       - name: Install Dependencies
         run: |
           # Install necessary dependencies (e.g., Git)
@@ -23,24 +25,23 @@ jobs:
           PROVIDER_VERSION: v8.4.0-13
         run: |
           # Authenticate with the Terraform Registry
-          curl --request POST \
+          upload_data=$(curl --request POST \
             --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
-            --output upload_data.json \
-            https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/upload
+            --url "https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/upload")
 
           # Upload the provider's package
-          UPLOAD_URL=$(cat upload_data.json | jq -r '.data.attributes."upload-url"')
-          UPLOAD_CONTENT_TYPE=$(cat upload_data.json | jq -r '.data.attributes."content-type"')
-          UPLOAD_FILE_PATH=<path_to_provider_directory> # Replace with the path to your provider directory or specific files
-          UPLOAD_FILE_NAME=<file_name> # Replace with the name of the file you want to upload
+          upload_url=$(echo "$upload_data" | jq -r '.data.attributes."upload-url"')
+          upload_content_type=$(echo "$upload_data" | jq -r '.data.attributes."content-type"')
+          upload_file_path=<path_to_provider_directory> # Replace with the path to your provider directory or specific files
+          upload_file_name=<file_name> # Replace with the name of the file you want to upload
           curl --request PUT \
-            --header "Content-Type: $UPLOAD_CONTENT_TYPE" \
-            --data-binary "@$UPLOAD_FILE_PATH/$UPLOAD_FILE_NAME" \
-            $UPLOAD_URL
+            --header "Content-Type: $upload_content_type" \
+            --data-binary "@$upload_file_path/$upload_file_name" \
+            "$upload_url"
 
           # Complete the provider's upload
           curl --request POST \
             --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
-            https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/complete
+            --url "https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/complete"
