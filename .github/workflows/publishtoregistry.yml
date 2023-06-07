@@ -3,7 +3,7 @@ name: Upload Provider to Terraform Registry
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   upload_provider:
@@ -15,7 +15,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # Install necessary dependencies (e.g., Git and tar)
+          # Install necessary dependencies (e.g., Git)
           # Replace with the appropriate package manager for your operating system
 
       - name: Publish Provider
@@ -24,12 +24,6 @@ jobs:
           PROVIDER_NAME: akshith-gunasheelan/oneview
           PROVIDER_VERSION: v8.4.0-13
         run: |
-          # Clone the repository
-          git clone https://github.com/akshith-gunasheelan/terraform-provider-oneview.git
-
-          # Archive the provider repository
-          tar -czf provider.tar.gz -C .
-
           # Authenticate with the Terraform Registry
           curl --request POST \
             --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
@@ -40,9 +34,11 @@ jobs:
           # Upload the provider's package
           UPLOAD_URL=$(cat upload_data.json | jq -r '.data.attributes."upload-url"')
           UPLOAD_CONTENT_TYPE=$(cat upload_data.json | jq -r '.data.attributes."content-type"')
+          UPLOAD_FILE_PATH=<path_to_provider_directory> # Replace with the path to your provider directory or specific files
+          UPLOAD_FILE_NAME=<file_name> # Replace with the name of the file you want to upload
           curl --request PUT \
             --header "Content-Type: $UPLOAD_CONTENT_TYPE" \
-            --data-binary "@provider.tar.gz" \
+            --data-binary "@$UPLOAD_FILE_PATH/$UPLOAD_FILE_NAME" \
             $UPLOAD_URL
 
           # Complete the provider's upload
@@ -50,7 +46,3 @@ jobs:
             --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
             --header "Content-Type: application/vnd.api+json" \
             https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/complete
-
-      - name: Cleanup
-        run: |
-          # Cleanup temporary files and directories
