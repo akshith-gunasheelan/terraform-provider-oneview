@@ -3,7 +3,7 @@ name: Upload Provider to Terraform Registry
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   upload_provider:
@@ -21,14 +21,14 @@ jobs:
       - name: Publish Provider
         env:
           TERRAFORM_REGISTRY_TOKEN: ${{ secrets.PAT_TOKEN }}
-          PROVIDER_NAME: <your_provider_name>
-          PROVIDER_VERSION: <your_provider_version>
+          PROVIDER_NAME: akshith-gunasheelan/oneview
+          PROVIDER_VERSION: v8.4.0-13
         run: |
           # Clone the repository
-          git clone <your_github_repository>
+          git clone https://github.com/akshith-gunasheelan/terraform-provider-oneview.git
 
           # Archive the provider repository
-          tar -czf provider.tar.gz -C <your_repository_directory> .
+          tar -czf provider.tar.gz -C .
 
           # Authenticate with the Terraform Registry
           curl --request POST \
