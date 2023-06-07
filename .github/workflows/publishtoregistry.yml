@@ -1,0 +1,56 @@
+name: Upload Provider to Terraform Registry
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload_provider:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: |
+          # Install necessary dependencies (e.g., Git and tar)
+          # Replace with the appropriate package manager for your operating system
+
+      - name: Publish Provider
+        env:
+          TERRAFORM_REGISTRY_TOKEN: ${{ secrets.PAT_TOKEN }}
+          PROVIDER_NAME: <your_provider_name>
+          PROVIDER_VERSION: <your_provider_version>
+        run: |
+          # Clone the repository
+          git clone <your_github_repository>
+
+          # Archive the provider repository
+          tar -czf provider.tar.gz -C <your_repository_directory> .
+
+          # Authenticate with the Terraform Registry
+          curl --request POST \
+            --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            --output upload_data.json \
+            https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/upload
+
+          # Upload the provider's package
+          UPLOAD_URL=$(cat upload_data.json | jq -r '.data.attributes."upload-url"')
+          UPLOAD_CONTENT_TYPE=$(cat upload_data.json | jq -r '.data.attributes."content-type"')
+          curl --request PUT \
+            --header "Content-Type: $UPLOAD_CONTENT_TYPE" \
+            --data-binary "@provider.tar.gz" \
+            $UPLOAD_URL
+
+          # Complete the provider's upload
+          curl --request POST \
+            --header "Authorization: Bearer $TERRAFORM_REGISTRY_TOKEN" \
+            --header "Content-Type: application/vnd.api+json" \
+            https://registry.terraform.io/v1/providers/$PROVIDER_NAME/$PROVIDER_VERSION/complete
+
+      - name: Cleanup
+        run: |
+          # Cleanup temporary files and directories
