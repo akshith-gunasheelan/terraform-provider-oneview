@@ -20,9 +20,8 @@ jobs:
 
       - name: Publish Provider
         env:
-          TERRAFORM_REGISTRY_TOKEN: ${{ secrets.PAT_TOKEN }}
-          PROVIDER_NAME: akshith-gunasheelan/oneview
-          PROVIDER_VERSION: v8.4.0-13
+          TERRAFORM_REGISTRY_TOKEN: ${{ secrets.TERRAFORM_REGISTRY_TOKEN }}
+          PROVIDER_NAME: akshith-gunasheelan/oneview 
         run: |
           # Authenticate with the Terraform Registry
           curl --request POST \
@@ -33,12 +32,7 @@ jobs:
                 "type": "providers",
                 "attributes": {
                   "name": "'"$PROVIDER_NAME"'",
-                  "vcs-repo": {
-                    "identifier": "'"$GITHUB_REPOSITORY"'",
-                    "display_identifier": "'"$GITHUB_REPOSITORY"'",
-                    "type": "github",
-                    "actions_allowed": true
-                  }
+                  "namespace": "namespace"
                 }
               }
             }' \
@@ -52,9 +46,10 @@ jobs:
               "data": {
                 "type": "versions",
                 "attributes": {
-                  "version": "'"$PROVIDER_VERSION"'",
-                  "vcs-ref": "'"$GITHUB_SHA"'"
+                  "version": "8.4.0-13",
+                  "provider": "akshith-gunasheelan/oneview ",
+                  "protocols": ["5.0"]
                 }
               }
             }' \
-            --url "https://registry.terraform.io/v1/providers/$PROVIDER_NAME/versions"
+            --url "https://registry.terraform.io/v1/providers/<namespace>/provider-name/versions"
