@@ -1,13 +1,14 @@
-name: Check Draft Release
+name: Check and Publish Draft Release
 
 on:
-  release:
+  workflow_run:
+    workflows:
+      - "Check and Publish Draft Release"
     types:
-      - published
-      - edited
+      - completed
 
 jobs:
-  check_draft_release:
+  check_and_publish_draft_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +23,7 @@ jobs:
             const response = await github.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: 'v8.4.0-13'  
+              tag: 'v8.4.0-13'  # Replace 'draft' with your actual draft release tag
             });
 
             console.log(response.data.upload_url);
@@ -31,6 +32,7 @@ jobs:
             return response.data
 
       - name: Check file in draft release
+        id: check_file
         run: |
           # Get the file names in the draft release
           files=$(echo "${{ steps.release.outputs.assets }}" | jq -r '.[].name')
@@ -38,10 +40,12 @@ jobs:
           # Check if the desired file exists
           if [[ $files =~ 'terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig' ]]; then
             echo "The file exists in the draft release"
+            echo "::set-output name=file_exists::true"
           else
             echo "The file does not exist in the draft release"
+            echo "::set-output name=file_exists::false"
           fi
-          
+
       - name: Publish release
         if: steps.check_file.outputs.file_exists == 'true'
         run: |
