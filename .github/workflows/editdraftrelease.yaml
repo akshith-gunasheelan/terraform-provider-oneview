@@ -1,0 +1,55 @@
+name: Check Draft Release
+
+on:
+  release:
+    types:
+      - published
+      - edited
+
+jobs:
+  check_draft_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get draft release
+        id: release
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const response = await github.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: 'v.8.4.0-13'  
+            });
+
+            console.log(response.data.upload_url);
+            console.log(response.data.assets);
+
+            return response.data
+
+      - name: Check file in draft release
+        run: |
+          # Get the file names in the draft release
+          files=$(echo "${{ steps.release.outputs.assets }}" | jq -r '.[].name')
+
+          # Check if the desired file exists
+          if [[ $files =~ 'terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig' ]]; then
+            echo "The file exists in the draft release"
+          else
+            echo "The file does not exist in the draft release"
+          fi
+          
+      - name: Publish release
+        if: steps.check_file.outputs.file_exists == 'true'
+        run: |
+          const response = await github.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: ${{ steps.release.outputs.id }},
+            draft: false
+          });
+
+          console.log(response);
