@@ -1,14 +1,13 @@
-name: Check and Publish Draft Release
+name: Check Draft Release
 
 on:
-  workflow_run:
-    workflows:
-      - "Check and Publish Draft Release"
+  release:
     types:
-      - completed
+      - published
+      - edited
 
 jobs:
-  check_and_publish_draft_release:
+  check_draft_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +22,7 @@ jobs:
             const response = await github.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: 'v8.4.0-13'  # Replace 'draft' with your actual draft release tag
+              tag: 'draft'  # Replace 'draft' with your actual draft release tag
             });
 
             console.log(response.data.upload_url);
@@ -38,7 +37,7 @@ jobs:
           files=$(echo "${{ steps.release.outputs.assets }}" | jq -r '.[].name')
 
           # Check if the desired file exists
-          if [[ $files =~ 'terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig' ]]; then
+          if [[ $files =~ 'desired_file_name.ext' ]]; then
             echo "The file exists in the draft release"
             echo "::set-output name=file_exists::true"
           else
@@ -46,14 +45,8 @@ jobs:
             echo "::set-output name=file_exists::false"
           fi
 
-      - name: Publish release
+      - name: Trigger Publish Workflow
         if: steps.check_file.outputs.file_exists == 'true'
         run: |
-          const response = await github.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            release_id: ${{ steps.release.outputs.id }},
-            draft: false
-          });
-
-          console.log(response);
+          echo "File exists in the draft release. Triggering Publish Workflow."
+          echo "::set-output name=trigger_publish::true"
