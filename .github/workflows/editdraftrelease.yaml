@@ -22,7 +22,7 @@ jobs:
             const response = await github.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: 'v.8.4.0-13'  
+              tag: 'v8.4.0-13'  
             });
 
             console.log(response.data.upload_url);
