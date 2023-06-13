@@ -22,7 +22,7 @@ jobs:
             const response = await github.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag: 'draft'  # Replace 'draft' with your actual draft release tag
+              tag: 'v8.4.0-13'  # Replace 'draft' with your actual draft release tag
             });
 
             console.log(response.data.upload_url);
@@ -37,7 +37,7 @@ jobs:
           files=$(echo "${{ steps.release.outputs.assets }}" | jq -r '.[].name')
 
           # Check if the desired file exists
-          if [[ $files =~ 'desired_file_name.ext' ]]; then
+          if [[ $files =~ 'terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig' ]]; then
             echo "The file exists in the draft release"
             echo "::set-output name=file_exists::true"
           else
