@@ -1,10 +1,6 @@
 name: Check Draft Release Assets
 on:
-  release:
-    types:
-      - created
-      - edited
-
+  workflow_dispatch:
 jobs:
   check_assets:
     runs-on: ubuntu-latest
