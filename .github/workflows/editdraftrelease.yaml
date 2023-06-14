@@ -1,6 +1,9 @@
 name: Check Draft Release Assets
 on:
-  workflow_dispatch:
+  release:
+    types:
+      - created
+      - edited
 
 jobs:
   check_assets:
