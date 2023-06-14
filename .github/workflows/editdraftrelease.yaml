@@ -1,48 +1,40 @@
 name: Check Draft Release
 
 on:
-  release:
-    types:
-      - published
-      - edited
+  workflow_dispatch:
 
 jobs:
-  check_draft_release:
+  check_release:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Get draft release
-        id: release
-        uses: actions/github-script@v4
-        with:
-          script: |
-            const response = await github.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: 'v8.4.0-13'  // Replace 'draft' with your actual draft release tag
-            });
-
-            console.log(response.data.upload_url);
-            console.log(response.data.assets);
-
-            return response.data
-
-      - name: Check file in draft release
-        id: check_file
-        run: |
-          files=$(echo "${{ steps.release.outputs.assets }}" | jq -r '.[].name')
-
-          if [[ $files =~ 'terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig' ]]; then
-            echo "The file exists in the draft release"
-            echo "::set-output name=file_exists::true"
-          else
-            echo "The file does not exist in the draft release"
-            echo "::set-output name=file_exists::false"
-          fi
-
-      - name: Trigger Publish Workflow
-        if: steps.check_file.outputs.file_exists == 'true'
-        run: echo "File exists in the draft release. Triggering Publish Workflow."
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    
+    - name: Get draft release ID
+      id: v8.4.0-13
+      run: |
+        draft_release_id=$(curl --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          --header "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases" \
+          | jq -r '.[] | select(.draft == true) | .id')
+        echo "::set-output name=draft_release_id::$draft_release_id"
+    
+    - name: Check if file exists
+      id: terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig
+      run: |
+        draft_release_id=${{ needs.draft_release.outputs.draft_release_id }}
+        file_exists=$(curl --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          --header "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/$draft_release_id/assets" \
+          | jq -r '.[] | select(.name == "your-file-name") | .id')
+        echo "::set-output name=file_exists::$file_exists"
+    
+    - name: Output result
+      run: |
+        file_exists=${{ needs.check_file.outputs.file_exists }}
+        if [[ $file_exists ]]; then
+          echo "The file exists in the draft release."
+        else
+          echo "The file does not exist in the draft release."
+        fi
