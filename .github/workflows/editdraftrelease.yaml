@@ -27,11 +27,12 @@ jobs:
         file_exists=$(curl --header "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
           --header "Accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/${{ github.repository }}/releases/$draft_release_id/assets" \
-          | jq -r '.[] | select(.name == "terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig") | .id')
-        if [[ -z $file_exists ]]; then
-          echo "::set-output name=file_exists::false"
-        else
+          | jq -r '.[] | .name' \
+          | grep -c "terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig")
+        if [[ $file_exists -gt 0 ]]; then
           echo "::set-output name=file_exists::true"
+        else
+          echo "::set-output name=file_exists::false"
         fi
     
     - name: Output result
