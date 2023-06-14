@@ -12,7 +12,7 @@ jobs:
       uses: actions/checkout@v2
     
     - name: Get draft release ID
-      id: v8.4.0-13
+      id: draft_release
       run: |
         draft_release_id=$(curl --header "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
           --header "Accept: application/vnd.github.v3+json" \
@@ -21,13 +21,13 @@ jobs:
         echo "::set-output name=draft_release_id::$draft_release_id"
     
     - name: Check if file exists
-      id: terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig
+      id: check_file
       run: |
         draft_release_id=${{ needs.draft_release.outputs.draft_release_id }}
         file_exists=$(curl --header "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
           --header "Accept: application/vnd.github.v3+json" \
           "https://api.github.com/repos/${{ github.repository }}/releases/$draft_release_id/assets" \
-          | jq -r '.[] | select(.name == "your-file-name") | .id')
+          | jq -r '.[] | select(.name == "terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig") | .id')
         echo "::set-output name=file_exists::$file_exists"
     
     - name: Output result
