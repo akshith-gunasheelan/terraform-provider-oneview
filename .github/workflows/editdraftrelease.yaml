@@ -1,45 +1,42 @@
-name: Check Draft Release
-
+name: Check Draft Release Assets
 on:
   workflow_dispatch:
 
 jobs:
-  check_release:
+  check_assets:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    
-    - name: Get draft release ID
-      id: draft_release
-      run: |
-        draft_release_id=$(curl --header "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-          --header "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/${{ github.repository }}/releases" \
-          | jq -r '.[] | select(.draft == true) | .id')
-        echo "::set-output name=draft_release_id::$draft_release_id"
-    
-    - name: Check if file exists
-      id: check_file
-      run: |
-        draft_release_id=${{ needs.draft_release.outputs.draft_release_id }}
-        file_exists=$(curl --header "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-          --header "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/$draft_release_id/assets" \
-          | jq -r '.[] | .name' \
-          | grep -c "terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig")
-        if [[ $file_exists -gt 0 ]]; then
-          echo "::set-output name=file_exists::true"
-        else
-          echo "::set-output name=file_exists::false"
-        fi
-    
-    - name: Output result
-      run: |
-        file_exists=${{ needs.check_file.outputs.file_exists }}
-        if [[ $file_exists == "true" ]]; then
-          echo "The file exists in the draft release."
-        else
-          echo "The file does not exist in the draft release."
-        fi
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Check Draft Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the latest draft release
+          draft_release=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              https://api.github.com/repos/${{ github.repository }}/releases | \
+              jq -r 'map(select(.draft))[0] | .tag_name')
+
+          # Check if the draft release exists and is not published yet
+          if [[ -n "$draft_release" ]]; then
+            echo "Latest draft release: $draft_release"
+
+            # Get the assets for the draft release
+            assets=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              https://api.github.com/repos/${{ github.repository }}/releases/tags/$draft_release/assets | \
+              jq -r '.[].name')
+
+            # Check if the required asset exists
+            required_asset="terraform-provider-oneview_8.3.0-13_SHA256SUMS.sig"
+            if echo "$assets" | grep -q "$required_asset"; then
+              echo "Required asset '$required_asset' found in the draft release!"
+            else
+              echo "Required asset '$required_asset' not found in the draft release."
+              exit 1
+            fi
+          else
+            echo "No draft releases found."
+            exit 1
+          fi
