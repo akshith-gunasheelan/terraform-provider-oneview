@@ -17,7 +17,6 @@ jobs:
         env:
           GITHUB_TOKEN:  ${{ secrets.PAT_TOKEN }}
           WITH_V: true
-          CUSTOM_TAG: "v8.4.0-13"
       - name: Display
         run: echo ${{ steps.tag_and_prepare_release.outputs.new_tag }}
       - uses: actions/checkout@v2
@@ -25,5 +24,5 @@ jobs:
         with:
           name:  ${{ steps.tag_and_prepare_release.outputs.new_tag }}
           tag: ${{ steps.tag_and_prepare_release.outputs.new_tag }}
-          body: See the <a href="https://github.com/akshith-gunasheelan/oneview-golang/blob/master/CHANGELOG.md">CHANGELOG.md</a> for details.
+          body: See the <a href="https://github.com/HewlettPackard/oneview-golang/blob/master/CHANGELOG.md">CHANGELOG.md</a> for details.
           token:  ${{secrets.PAT_TOKEN}} 
